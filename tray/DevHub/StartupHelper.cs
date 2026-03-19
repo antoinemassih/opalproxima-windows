@@ -18,4 +18,10 @@ public static class StartupHelper
         using var key = Registry.CurrentUser.OpenSubKey(KeyPath, true);
         key?.DeleteValue(ValueName, false);
     }
+
+    public static bool IsEnabled()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(KeyPath, false);
+        return key?.GetValue(ValueName) != null;
+    }
 }

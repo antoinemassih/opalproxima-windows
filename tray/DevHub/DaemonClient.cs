@@ -70,5 +70,15 @@ public class DaemonClient : IDisposable
         catch { return false; }
     }
 
+    public async Task<bool> PromoteProjectAsync(string id)
+    {
+        try
+        {
+            var r = await _http.PostAsync($"projects/{id}/promote", null);
+            return r.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
     public void Dispose() => _http.Dispose();
 }

@@ -85,7 +85,9 @@ public class TrayApp : ApplicationContext
         bool hasWarnings = status?.Warnings?.Length > 0 || !daemon;
         _tray.Icon = hasWarnings ? SystemIcons.Warning : SystemIcons.Application;
         _tray.Text = hasWarnings ? "DevHub — Warning" : "DevHub";
+        var oldMenu = _tray.ContextMenuStrip;
         _tray.ContextMenuStrip = BuildMenu(projects);
+        oldMenu?.Dispose();
     }
 
     private ContextMenuStrip BuildMenu(List<Project> projects)
@@ -113,6 +115,10 @@ public class TrayApp : ApplicationContext
                 sub.DropDownItems.Add("Deploy to dev", null, async (_, _) =>
                     await _client.DeployProjectAsync(p.Id));
 
+            if (p.K3sAppName != null)
+                sub.DropDownItems.Add("Promote to prod", null, async (_, _) =>
+                    await _client.PromoteProjectAsync(p.Id));
+
             if (p.Port.HasValue)
                 sub.DropDownItems.Add("Open in browser", null, (_, _) =>
                     Process.Start(new ProcessStartInfo($"http://localhost:{p.Port}") { UseShellExecute = true }));
@@ -129,8 +135,20 @@ public class TrayApp : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
 
         // Run at startup toggle
-        menu.Items.Add("Run at Startup", null, (_, _) =>
-            StartupHelper.Enable(Application.ExecutablePath));
+        bool startupEnabled = StartupHelper.IsEnabled();
+        var startupItem = new ToolStripMenuItem("Run at Startup")
+        {
+            Checked = startupEnabled,
+            CheckOnClick = true,
+        };
+        startupItem.Click += (_, _) =>
+        {
+            if (StartupHelper.IsEnabled())
+                StartupHelper.Disable();
+            else
+                StartupHelper.Enable(Application.ExecutablePath);
+        };
+        menu.Items.Add(startupItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
