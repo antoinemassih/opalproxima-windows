@@ -16,22 +16,36 @@ public class ProcessManager
         // Stop any existing processes before starting new ones
         StopAll();
 
-        _daemon = StartProcess(
-            "python",
-            "-m uvicorn daemon.main:app --host 127.0.0.1 --port 7477",
-            _devhubRoot
-        );
-        _caddy = StartProcess(
-            System.IO.Path.Combine(_devhubRoot, "caddy.exe"),
-            $"run --config \"{System.IO.Path.Combine(_devhubRoot, "Caddyfile")}\"",
-            _devhubRoot
-        );
-        _ui = StartProcess(
-            "npm",
-            $"run start -- --port {uiPort}",
-            System.IO.Path.Combine(_devhubRoot, "ui"),
-            new Dictionary<string, string> { ["DAEMON_TOKEN"] = daemonToken }
-        );
+        try
+        {
+            _daemon = StartProcess(
+                "python",
+                "-m uvicorn daemon.main:app --host 127.0.0.1 --port 7477",
+                _devhubRoot
+            );
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Daemon start failed: {ex.Message}"); }
+
+        try
+        {
+            _caddy = StartProcess(
+                System.IO.Path.Combine(_devhubRoot, "caddy.exe"),
+                $"run --config \"{System.IO.Path.Combine(_devhubRoot, "Caddyfile")}\"",
+                _devhubRoot
+            );
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Caddy start failed: {ex.Message}"); }
+
+        try
+        {
+            _ui = StartProcess(
+                "cmd.exe",
+                $"/c npm run start -- --port {uiPort}",
+                System.IO.Path.Combine(_devhubRoot, "ui"),
+                new Dictionary<string, string> { ["DAEMON_TOKEN"] = daemonToken }
+            );
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"UI start failed: {ex.Message}"); }
     }
 
     public void StopAll()

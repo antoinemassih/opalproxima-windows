@@ -17,9 +17,22 @@ Application.EnableVisualStyles();
 Application.SetCompatibleTextRenderingDefault(false);
 
 // devhub root: in release, DevHub.exe is at the zip root alongside daemon\ and ui\
-// In dev, set DEVHUB_ROOT env var to override (e.g., set to the repo root)
-var root = Environment.GetEnvironmentVariable("DEVHUB_ROOT")
-    ?? AppContext.BaseDirectory;
+// In dev, walk up from the exe location until we find Caddyfile (the root marker)
+var root = Environment.GetEnvironmentVariable("DEVHUB_ROOT");
+if (root == null)
+{
+    var dir = new DirectoryInfo(AppContext.BaseDirectory);
+    while (dir != null)
+    {
+        if (File.Exists(Path.Combine(dir.FullName, "Caddyfile")))
+        {
+            root = dir.FullName;
+            break;
+        }
+        dir = dir.Parent;
+    }
+    root ??= AppContext.BaseDirectory;
+}
 
 Application.Run(new TrayApp(root));
 
