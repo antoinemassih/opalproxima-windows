@@ -29,7 +29,7 @@ async def infra_refresh_loop():
     while True:
         await asyncio.sleep(60)
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             from daemon.routers.k8s import refresh_pods
             await loop.run_in_executor(None, refresh_pods)
         except Exception:
