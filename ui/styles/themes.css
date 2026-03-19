@@ -1,0 +1,67 @@
+/* Coralbeef 6-theme system */
+:root, [data-theme="dark"] {
+  --bg: #0f1117;
+  --bg-card: #1a1d2e;
+  --border: #2a2d3e;
+  --text: #e2e8f0;
+  --text-muted: #64748b;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --running: #10b981;
+  --stopped: #64748b;
+  --deploying: #6366f1;
+  --unknown: #f59e0b;
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #94a3b8;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+}
+
+[data-theme="ocean"] {
+  --bg: #0c1821;
+  --bg-card: #1a2940;
+  --border: #1e3a5f;
+  --text: #cce7ff;
+  --text-muted: #5a8ab0;
+  --accent: #0ea5e9;
+  --accent-hover: #0284c7;
+}
+
+[data-theme="forest"] {
+  --bg: #0d1a0f;
+  --bg-card: #1a2e1d;
+  --border: #2d4a31;
+  --text: #d4edda;
+  --text-muted: #5a8a63;
+  --accent: #22c55e;
+  --accent-hover: #16a34a;
+}
+
+[data-theme="ember"] {
+  --bg: #1a0d00;
+  --bg-card: #2e1a0d;
+  --border: #4a2d1a;
+  --text: #fde8d0;
+  --text-muted: #8a6050;
+  --accent: #f97316;
+  --accent-hover: #ea580c;
+}
+
+[data-theme="mono"] {
+  --bg: #111111;
+  --bg-card: #1c1c1c;
+  --border: #333333;
+  --text: #eeeeee;
+  --text-muted: #888888;
+  --accent: #eeeeee;
+  --accent-hover: #cccccc;
+}
