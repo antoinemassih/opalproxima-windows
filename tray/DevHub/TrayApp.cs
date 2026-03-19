@@ -12,6 +12,7 @@ public class TrayApp : ApplicationContext
     private readonly AppConfig _config;
     private int _backoffMs = 250;
     private bool _daemonReady = false;
+    private bool _daemonWasAlive = false;
     private readonly string _devhubRoot;
 
     public TrayApp(string devhubRoot)
@@ -75,10 +76,16 @@ public class TrayApp : ApplicationContext
         if (!daemon)
         {
             _processes.StartAll(_config.UiPort, _config.DaemonToken);
-            ToastHelper.Notify("DevHub", "Daemon crashed — restarting.");
+            if (_daemonWasAlive)
+                ToastHelper.Notify("DevHub", "Daemon crashed — restarting.");
+            _daemonWasAlive = false;
             _daemonReady = false;
             _backoffMs = 250;
             _timer.Interval = _backoffMs;
+        }
+        else
+        {
+            _daemonWasAlive = true;
         }
 
         // Update tray icon based on warnings
