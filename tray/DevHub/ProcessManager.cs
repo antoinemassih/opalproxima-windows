@@ -11,14 +11,14 @@ public class ProcessManager
 
     public ProcessManager(string devhubRoot) => _devhubRoot = devhubRoot;
 
-    public void StartAll(int uiPort)
+    public void StartAll(int uiPort, string daemonToken)
     {
         // Stop any existing processes before starting new ones
         StopAll();
 
         _daemon = StartProcess(
             "python",
-            $"\"{System.IO.Path.Combine(_devhubRoot, "daemon", "main.py")}\"",
+            "-m uvicorn daemon.main:app --host 127.0.0.1 --port 7477",
             _devhubRoot
         );
         _caddy = StartProcess(
@@ -29,7 +29,8 @@ public class ProcessManager
         _ui = StartProcess(
             "npm",
             $"run start -- --port {uiPort}",
-            System.IO.Path.Combine(_devhubRoot, "ui")
+            System.IO.Path.Combine(_devhubRoot, "ui"),
+            new Dictionary<string, string> { ["DAEMON_TOKEN"] = daemonToken }
         );
     }
 
@@ -46,7 +47,8 @@ public class ProcessManager
     public (bool daemon, bool caddy, bool ui) GetStatus() =>
         (IsDaemonAlive(), IsCaddyAlive(), IsUiAlive());
 
-    private static Process StartProcess(string exe, string args, string workDir)
+    private static Process StartProcess(string exe, string args, string workDir,
+        Dictionary<string, string>? env = null)
     {
         var psi = new ProcessStartInfo(exe, args)
         {
@@ -54,6 +56,9 @@ public class ProcessManager
             UseShellExecute = false,
             CreateNoWindow = true,
         };
+        if (env != null)
+            foreach (var (k, v) in env)
+                psi.Environment[k] = v;
         return Process.Start(psi) ?? throw new Exception($"Failed to start {exe}");
     }
 

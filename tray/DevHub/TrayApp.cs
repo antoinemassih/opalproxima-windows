@@ -33,7 +33,7 @@ public class TrayApp : ApplicationContext
         _timer.Tick += OnTick;
         _timer.Start();
 
-        _processes.StartAll(_config.UiPort);
+        _processes.StartAll(_config.UiPort, _config.DaemonToken);
     }
 
     private async void OnTick(object? sender, EventArgs e)
@@ -74,7 +74,7 @@ public class TrayApp : ApplicationContext
         var (daemon, caddy, ui) = _processes.GetStatus();
         if (!daemon)
         {
-            _processes.StartAll(_config.UiPort);
+            _processes.StartAll(_config.UiPort, _config.DaemonToken);
             ToastHelper.Notify("DevHub", "Daemon crashed — restarting.");
             _daemonReady = false;
             _backoffMs = 250;
