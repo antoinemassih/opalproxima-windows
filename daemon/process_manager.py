@@ -7,6 +7,9 @@ class ProcessManager:
         self._procs: dict[str, subprocess.Popen] = {}
 
     def start(self, project_id: str, cmd: str, cwd: str) -> int:
+        # Stop existing process if any, to avoid leaking it
+        if project_id in self._procs:
+            self.stop(project_id)
         clear_buffer(project_id)
         buf = get_buffer(project_id)
         proc = subprocess.Popen(
@@ -34,7 +37,7 @@ class ProcessManager:
             try:
                 proc.send_signal(signal.CTRL_BREAK_EVENT)
                 proc.wait(timeout=5)
-            except Exception:
+            except subprocess.TimeoutExpired:
                 proc.kill()
 
     def is_running(self, project_id: str) -> bool:

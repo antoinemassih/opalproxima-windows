@@ -20,12 +20,15 @@ class LogBuffer:
 
 # Global registry: project_id → LogBuffer
 _buffers: dict[str, LogBuffer] = {}
+_registry_lock = Lock()
 
 def get_buffer(project_id: str) -> LogBuffer:
-    if project_id not in _buffers:
-        _buffers[project_id] = LogBuffer()
-    return _buffers[project_id]
+    with _registry_lock:
+        if project_id not in _buffers:
+            _buffers[project_id] = LogBuffer()
+        return _buffers[project_id]
 
 def clear_buffer(project_id: str):
-    if project_id in _buffers:
-        _buffers[project_id].clear()
+    with _registry_lock:
+        if project_id in _buffers:
+            _buffers[project_id].clear()
