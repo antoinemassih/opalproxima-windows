@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 import asyncio, json
 
@@ -12,6 +12,13 @@ from daemon.process_manager import process_manager
 from daemon.log_buffer import get_buffer
 
 router = APIRouter(prefix="/projects", tags=["projects"])
+
+async def _get_project_or_404(db, project_id: str) -> dict:
+    async with db.execute("SELECT * FROM projects WHERE id=?", (project_id,)) as cur:
+        row = await cur.fetchone()
+    if row is None:
+        raise HTTPException(404, f"Project {project_id} not found")
+    return dict(row)
 
 def _detect_type(path: str) -> tuple[str, str]:
     p = Path(path)
@@ -63,8 +70,7 @@ async def delete_project(project_id: str, db=Depends(get_db), _=Depends(require_
 
 @router.post("/{project_id}/start")
 async def start_project(project_id: str, db=Depends(get_db), _=Depends(require_token)):
-    async with db.execute("SELECT * FROM projects WHERE id=?", (project_id,)) as cur:
-        row = dict(await cur.fetchone())
+    row = await _get_project_or_404(db, project_id)
     pid = process_manager.start(project_id, row["start_cmd"], row["path"])
     now = datetime.now(timezone.utc).isoformat()
     await db.execute(
@@ -89,10 +95,8 @@ async def stop_project(project_id: str, db=Depends(get_db), _=Depends(require_to
 async def deploy_project(project_id: str, db=Depends(get_db), _=Depends(require_token)):
     from daemon.config import CONFIG
     import subprocess
-    async with db.execute("SELECT k3s_app_name, path FROM projects WHERE id=?", (project_id,)) as cur:
-        row = dict(await cur.fetchone())
+    row = await _get_project_or_404(db, project_id)
     if not row.get("k3s_app_name"):
-        from fastapi import HTTPException
         raise HTTPException(400, "Project has no k3s_app_name configured")
     now = datetime.now(timezone.utc).isoformat()
     await db.execute("UPDATE projects SET status='deploying', updated_at=? WHERE id=?", (now, project_id))
@@ -109,10 +113,8 @@ async def deploy_project(project_id: str, db=Depends(get_db), _=Depends(require_
 async def promote_project(project_id: str, db=Depends(get_db), _=Depends(require_token)):
     from daemon.config import CONFIG
     import subprocess
-    async with db.execute("SELECT k3s_app_name FROM projects WHERE id=?", (project_id,)) as cur:
-        row = dict(await cur.fetchone())
+    row = await _get_project_or_404(db, project_id)
     if not row.get("k3s_app_name"):
-        from fastapi import HTTPException
         raise HTTPException(400, "Project has no k3s_app_name configured")
     cmd = f"{CONFIG['k3s_app_cmd']} promote {row['k3s_app_name']}"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)

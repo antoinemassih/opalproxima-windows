@@ -41,3 +41,7 @@ def test_delete_project(client, tmp_path):
     # Verify deleted
     r3 = client.get("/projects", headers=HEADERS)
     assert all(p["id"] != pid for p in r3.json())
+
+def test_start_nonexistent_project_returns_404(client):
+    r = client.post("/projects/does-not-exist/start", headers=HEADERS)
+    assert r.status_code == 404
