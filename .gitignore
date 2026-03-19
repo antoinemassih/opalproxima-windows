@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 daemon/devhub.db
 daemon/config.json
+config.json
 
 # Node
 ui/node_modules/
