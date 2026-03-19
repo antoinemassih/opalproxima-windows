@@ -14,6 +14,7 @@ public class TrayApp : ApplicationContext
     private bool _daemonReady = false;
     private bool _daemonWasAlive = false;
     private readonly string _devhubRoot;
+    private readonly Icon _idleIcon;
 
     public TrayApp(string devhubRoot)
     {
@@ -22,9 +23,13 @@ public class TrayApp : ApplicationContext
         _processes = new ProcessManager(devhubRoot);
         _client = new DaemonClient(_config.DaemonToken);
 
+        var asm = System.Reflection.Assembly.GetExecutingAssembly();
+        var iconStream = asm.GetManifestResourceStream("DevHub.devhub.ico");
+        _idleIcon = iconStream != null ? new Icon(iconStream) : SystemIcons.Application;
+
         _tray = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _idleIcon,
             Text = "DevHub — Starting...",
             Visible = true,
             ContextMenuStrip = BuildMenu([]),
@@ -90,7 +95,7 @@ public class TrayApp : ApplicationContext
 
         // Update tray icon based on warnings
         bool hasWarnings = status?.Warnings?.Length > 0 || !daemon;
-        _tray.Icon = hasWarnings ? SystemIcons.Warning : SystemIcons.Application;
+        _tray.Icon = hasWarnings ? SystemIcons.Warning : _idleIcon;
         _tray.Text = hasWarnings ? "DevHub — Warning" : "DevHub";
         var oldMenu = _tray.ContextMenuStrip;
         _tray.ContextMenuStrip = BuildMenu(projects);
