@@ -1,7 +1,7 @@
 import aiosqlite
 from pathlib import Path
 
-DB_PATH = Path("devhub.db")
+DB_PATH = Path(__file__).parent / "devhub.db"
 
 CREATE_PROJECTS = """
 CREATE TABLE IF NOT EXISTS projects (

@@ -12,7 +12,9 @@ DEFAULTS = {
     "ui_port": 3000,
 }
 
-def load_config(path: Path = Path("config.json")) -> dict:
+DEFAULT_CONFIG_PATH = Path(__file__).parent / "config.json"
+
+def load_config(path: Path = Path(__file__).parent / "config.json") -> dict:
     cfg = {**DEFAULTS}
     if path.exists():
         cfg.update(json.loads(path.read_text()))
@@ -21,4 +23,4 @@ def load_config(path: Path = Path("config.json")) -> dict:
         path.write_text(json.dumps(cfg, indent=2))
     return cfg
 
-CONFIG = load_config()
+CONFIG = load_config(DEFAULT_CONFIG_PATH)
