@@ -1,7 +1,7 @@
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
 aiosqlite==0.20.0
-pydantic>=2.7.0  # pinned floor only; pydantic==2.7.0 cannot build on Python 3.13
+pydantic>=2.7.0,<3.0.0
 httpx==0.27.0
 psutil==5.9.8
 pyyaml==6.0.1

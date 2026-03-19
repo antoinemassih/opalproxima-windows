@@ -1,4 +1,5 @@
 import subprocess, json
+from threading import Lock
 from fastapi import APIRouter, Depends
 from daemon.auth import require_token
 from daemon.config import CONFIG
@@ -7,6 +8,7 @@ router = APIRouter(prefix="/k8s", tags=["k8s"])
 
 # In-memory cache refreshed by background worker
 _pod_cache: dict = {"dev": [], "prod": [], "available": True, "error": None}
+_cache_lock = Lock()
 
 def refresh_pods():
     """Synchronous — call from background thread via run_in_executor."""
@@ -32,8 +34,10 @@ def refresh_pods():
         except Exception as e:
             new_cache["available"] = False
             new_cache["error"] = str(e)
-    _pod_cache.update(new_cache)
+    with _cache_lock:
+        _pod_cache.update(new_cache)
 
 @router.get("")
 async def pod_health(_=Depends(require_token)):
-    return _pod_cache
+    with _cache_lock:
+        return dict(_pod_cache)

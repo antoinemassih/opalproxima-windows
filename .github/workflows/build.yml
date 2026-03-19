@@ -41,10 +41,15 @@ jobs:
       - name: Package release zip
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist/release | Out-Null
+          New-Item -ItemType Directory -Force dist/release/daemon/routers | Out-Null
+          New-Item -ItemType Directory -Force dist/release/ui | Out-Null
           Copy-Item dist/tray/DevHub.exe dist/release/
           Copy-Item Caddyfile dist/release/
-          Copy-Item -Path daemon -Destination dist/release/daemon -Recurse
+          # Copy daemon source only — exclude .venv, devhub.db, config.json, __pycache__
+          Copy-Item daemon/*.py dist/release/daemon/
+          Copy-Item daemon/routers/*.py dist/release/daemon/routers/
+          Copy-Item daemon/requirements.txt dist/release/daemon/
+          Copy-Item daemon/pytest.ini dist/release/daemon/
           Copy-Item -Path ui/.next -Destination dist/release/ui/.next -Recurse
           if (Test-Path ui/public) {
             Copy-Item -Path ui/public -Destination dist/release/ui/public -Recurse

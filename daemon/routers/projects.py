@@ -94,7 +94,6 @@ async def stop_project(project_id: str, db=Depends(get_db), _=Depends(require_to
 @router.post("/{project_id}/deploy")
 async def deploy_project(project_id: str, db=Depends(get_db), _=Depends(require_token)):
     from daemon.config import CONFIG
-    import subprocess
     row = await _get_project_or_404(db, project_id)
     if not row.get("k3s_app_name"):
         raise HTTPException(400, "Project has no k3s_app_name configured")
@@ -102,35 +101,46 @@ async def deploy_project(project_id: str, db=Depends(get_db), _=Depends(require_
     await db.execute("UPDATE projects SET status='deploying', updated_at=? WHERE id=?", (now, project_id))
     await db.commit()
     cmd = f"{CONFIG['k3s_app_cmd']} deploy {row['k3s_app_name']} {row['path']}"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=120)
-    status = "stopped" if result.returncode == 0 else "error"
+    proc = await asyncio.create_subprocess_shell(
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+    status = "stopped" if proc.returncode == 0 else "error"
     now = datetime.now(timezone.utc).isoformat()
     await db.execute("UPDATE projects SET status=?, updated_at=? WHERE id=?", (status, now, project_id))
     await db.commit()
-    return {"ok": result.returncode == 0, "output": result.stdout, "error": result.stderr}
+    return {"ok": proc.returncode == 0, "output": stdout.decode(), "error": stderr.decode()}
 
 @router.post("/{project_id}/promote")
 async def promote_project(project_id: str, db=Depends(get_db), _=Depends(require_token)):
     from daemon.config import CONFIG
-    import subprocess
     row = await _get_project_or_404(db, project_id)
     if not row.get("k3s_app_name"):
         raise HTTPException(400, "Project has no k3s_app_name configured")
     cmd = f"{CONFIG['k3s_app_cmd']} promote {row['k3s_app_name']}"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
-    return {"ok": result.returncode == 0, "output": result.stdout, "error": result.stderr}
+    proc = await asyncio.create_subprocess_shell(
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=60)
+    return {"ok": proc.returncode == 0, "output": stdout.decode(), "error": stderr.decode()}
 
 @router.get("/{project_id}/logs")
 async def stream_logs(project_id: str, _=Depends(require_token)):
     buf = get_buffer(project_id)
     async def generate():
-        for line in buf.lines():
+        snapshot = buf.lines()
+        for line in snapshot:
             yield f"data: {json.dumps({'line': line})}\n\n"
-        seen = len(buf.lines())
+        seen = len(snapshot)
         while True:
-            lines = buf.lines()
-            for line in lines[seen:]:
-                yield f"data: {json.dumps({'line': line})}\n\n"
-            seen = len(lines)
             await asyncio.sleep(0.2)
+            snapshot = buf.lines()
+            new_lines = snapshot[seen:]
+            for line in new_lines:
+                yield f"data: {json.dumps({'line': line})}\n\n"
+            seen = len(snapshot)
     return StreamingResponse(generate(), media_type="text/event-stream")

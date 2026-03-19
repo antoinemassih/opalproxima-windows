@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace DevHub.Models;
 
 public record Project(
@@ -7,6 +9,6 @@ public record Project(
     string Type,
     string Status,
     int? Port,
-    string? K3sAppName,
-    int? ProcessPid
+    [property: JsonPropertyName("k3s_app_name")] string? K3sAppName,
+    [property: JsonPropertyName("process_pid")] int? ProcessPid
 );
