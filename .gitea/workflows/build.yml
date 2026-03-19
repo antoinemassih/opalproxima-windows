@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build tray exe
+        run: |
+          cd tray
+          dotnet publish DevHub/DevHub.csproj -c Release -r win-x64 --self-contained -o ../dist/tray
+
+      - name: Build Next.js dashboard
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
+      - name: Package release zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/release | Out-Null
+          Copy-Item dist/tray/DevHub.exe dist/release/
+          Copy-Item Caddyfile dist/release/
+          Copy-Item -Path daemon -Destination dist/release/daemon -Recurse
+          Copy-Item -Path ui/.next -Destination dist/release/ui/.next -Recurse
+          if (Test-Path ui/public) {
+            Copy-Item -Path ui/public -Destination dist/release/ui/public -Recurse
+          }
+          Copy-Item ui/package.json dist/release/ui/
+          Compress-Archive -Path dist/release/* -DestinationPath opalproxima-windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opalproxima-windows
+          path: opalproxima-windows.zip
+
+      - name: Upload release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: opalproxima-windows.zip
