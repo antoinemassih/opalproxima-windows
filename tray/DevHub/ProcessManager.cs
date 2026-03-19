@@ -13,6 +13,9 @@ public class ProcessManager
 
     public void StartAll(int uiPort)
     {
+        // Stop any existing processes before starting new ones
+        StopAll();
+
         _daemon = StartProcess(
             "python",
             $"\"{System.IO.Path.Combine(_devhubRoot, "daemon", "main.py")}\"",
@@ -56,6 +59,8 @@ public class ProcessManager
 
     private static void TryKill(Process? p)
     {
-        try { p?.Kill(entireProcessTree: true); } catch { }
+        if (p == null) return;
+        try { p.Kill(entireProcessTree: true); } catch { }
+        try { p.Dispose(); } catch { }
     }
 }
