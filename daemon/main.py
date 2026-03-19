@@ -24,7 +24,18 @@ async def lifespan(app: FastAPI):
         app.state.k8s_available = True
     except Exception:
         app.state.k8s_available = False
+
+    # Start background workers
+    from daemon.background import health_check_loop, infra_refresh_loop
+    tasks = [
+        asyncio.create_task(health_check_loop()),
+        asyncio.create_task(infra_refresh_loop()),
+    ]
     yield
+    # Cancel background tasks on shutdown
+    for t in tasks:
+        t.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 app = FastAPI(title="DevHub Daemon", lifespan=lifespan)
 app.include_router(projects.router)
