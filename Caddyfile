@@ -1,0 +1,4 @@
+devhub.localhost {
+    reverse_proxy /api/* localhost:7477
+    reverse_proxy /* localhost:3000
+}

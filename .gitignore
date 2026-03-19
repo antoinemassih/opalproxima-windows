@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+daemon/devhub.db
+daemon/config.json
+
+# Node
+ui/node_modules/
+ui/.next/
+ui/.env.local
+
+# C#
+tray/*/bin/
+tray/*/obj/
+*.user
+
+# Misc
+.DS_Store
+Thumbs.db
